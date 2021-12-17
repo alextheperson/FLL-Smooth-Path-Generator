@@ -41,18 +41,31 @@ function draw() {
   quadratic = showQuadratic.checked;
   approxQuadratic = showApproxQuadratic.checked;
   catmull = showCatmull.checked;
-  
-  if (mouseIsPressed) {
-    gridOffset[0] = gridOffset[0] + movedX;
-    gridOffset[1] = gridOffset[1] + movedY;
-
-    gridOffset[0] = constrain(gridOffset[0], -1000, 1000);
-    gridOffset[1] = constrain(gridOffset[1], -1000, 1000);
-  }
 
   push();
   scale(gridScale);
   translate(gridOffset[0], gridOffset[1]);
+
+  if (mouseIsPressed) {
+    let onPoint = false;
+    let point;
+    for (let i = 0; i < linePoints.length; i++){
+      if (dist(linePoints[i][0], linePoints[i][1], mouseX - gridOffset[0], mouseY - gridOffset[1]) < 10){
+        onPoint = true;
+        point = i;
+      }
+    }
+
+    if (onPoint) {
+      linePoints[point][0] = Math.round((mouseX - gridOffset[0]) / 10) * 10;
+      linePoints[point][1] = Math.round((mouseY - gridOffset[1]) / 10) * 10;
+    } else {
+      gridOffset[0] = gridOffset[0] + movedX;
+      gridOffset[1] = gridOffset[1] + movedY;
+      gridOffset[0] = constrain(gridOffset[0], -1000, 1000);
+      gridOffset[1] = constrain(gridOffset[1], -1000, 1000);
+    }
+  }
 
   drawGrid();
   
@@ -119,7 +132,10 @@ function drawMarkers() {
 
     let angle = calculateAngle(slopeOne, slopeTwo)
 
+    push();
+    if (dist(currPoint[0], currPoint[1], mouseX - gridOffset[0], mouseY - gridOffset[1]) < 10){fill(0)}
     circle(currPoint[0], currPoint[1], 5);
+    pop();
 
     //prev segment
     segmentDistance = dist(prevPoint[0], prevPoint[1], currPoint[0], currPoint[1]);
@@ -158,9 +174,14 @@ function drawMarkers() {
       centeredSquare(curvedPoints[i][0], curvedPoints[i][1], 5);
     }
   }
-
-  circle(linePoints[0][0], linePoints[0][1], 5)
-  circle(linePoints[linePoints.length-1][0], linePoints[linePoints.length-1][1], 5)
+  push();
+    if (dist(linePoints[0][0], linePoints[0][1], mouseX - gridOffset[0], mouseY - gridOffset[1]) < 10){fill(0)}
+    circle(linePoints[0][0], linePoints[0][1], 5);
+  pop();
+  push();
+    if (dist(linePoints[linePoints.length-1][0], linePoints[linePoints.length-1][1], mouseX - gridOffset[0], mouseY - gridOffset[1]) < 10){fill(0)}
+    circle(linePoints[linePoints.length-1][0], linePoints[linePoints.length-1][1], 5);
+  pop();
   pop()
 }
 
