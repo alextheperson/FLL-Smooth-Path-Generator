@@ -12,6 +12,7 @@ let approxQuadratic = false
 let catmull = false;
 
 let sliderCurveness, sliderResolution, showOriginal, showQuadratic, showApproxQuadratic, showCatmull;
+let currentPoint = -1;
 
 function setup() {
   createCanvas(window.innerWidth, window.innerHeight);
@@ -47,24 +48,7 @@ function draw() {
   translate(gridOffset[0], gridOffset[1]);
 
   if (mouseIsPressed) {
-    let onPoint = false;
-    let point;
-    for (let i = 0; i < linePoints.length; i++){
-      if (dist(linePoints[i][0], linePoints[i][1], mouseX - gridOffset[0], mouseY - gridOffset[1]) < 10){
-        onPoint = true;
-        point = i;
-      }
-    }
-
-    if (onPoint) {
-      linePoints[point][0] = Math.round((mouseX - gridOffset[0]) / 10) * 10;
-      linePoints[point][1] = Math.round((mouseY - gridOffset[1]) / 10) * 10;
-    } else {
-      gridOffset[0] = gridOffset[0] + movedX;
-      gridOffset[1] = gridOffset[1] + movedY;
-      gridOffset[0] = constrain(gridOffset[0], -1000, 1000);
-      gridOffset[1] = constrain(gridOffset[1], -1000, 1000);
-    }
+    dragPoints()
   }
 
   drawGrid();
@@ -133,8 +117,9 @@ function drawMarkers() {
     let angle = calculateAngle(slopeOne, slopeTwo)
 
     push();
-    if (dist(currPoint[0], currPoint[1], mouseX - gridOffset[0], mouseY - gridOffset[1]) < 10){fill(0)}
-    circle(currPoint[0], currPoint[1], 5);
+    if (isOnPoint() == i) {fill(0)}
+    if (currentPoint == i) {circle(currPoint[0], currPoint[1], 10);}
+    else {circle(currPoint[0], currPoint[1], 5);}
     pop();
 
     //prev segment
@@ -175,12 +160,14 @@ function drawMarkers() {
     }
   }
   push();
-    if (dist(linePoints[0][0], linePoints[0][1], mouseX - gridOffset[0], mouseY - gridOffset[1]) < 10){fill(0)}
-    circle(linePoints[0][0], linePoints[0][1], 5);
+    if (isOnPoint() == 0) {fill(0)}
+    if (currentPoint == 0) {circle(linePoints[0][0], linePoints[0][1], 10);}
+    else {circle(linePoints[0][0], linePoints[0][1], 5);}
   pop();
   push();
-    if (dist(linePoints[linePoints.length-1][0], linePoints[linePoints.length-1][1], mouseX - gridOffset[0], mouseY - gridOffset[1]) < 10){fill(0)}
-    circle(linePoints[linePoints.length-1][0], linePoints[linePoints.length-1][1], 5);
+    if (isOnPoint() == linePoints.length-1) {fill(0)}
+    if (currentPoint == linePoints.length-1) {circle(linePoints[linePoints.length-1][0], linePoints[linePoints.length-1][1], 10);}
+    else {circle(linePoints[linePoints.length-1][0], linePoints[linePoints.length-1][1], 5);}
   pop();
   pop()
 }
@@ -294,4 +281,37 @@ function subdivideCurve(i) {
 
     curvedPoints.push([pointX, pointY]);
   }
+}
+
+function isOnPoint(){
+  let point = -1
+  for (let i = 0; i < linePoints.length; i++){
+    if (dist(linePoints[i][0], linePoints[i][1], mouseX - gridOffset[0], mouseY - gridOffset[1]) < 10){
+      point = i;
+    }
+  }
+  return point;
+}
+
+function dragPoints() {
+  if (currentPoint != -1) {
+    snapSize = 10;
+    if (keyIsPressed === true) {
+      if (key == "Shift") snapSize = 50;
+    }
+    linePoints[currentPoint][0] = Math.round((mouseX - gridOffset[0]) / snapSize) * snapSize;
+    linePoints[currentPoint][1] = Math.round((mouseY - gridOffset[1]) / snapSize) * snapSize;
+  } else {
+    gridOffset[0] = gridOffset[0] + movedX;
+    gridOffset[1] = gridOffset[1] + movedY;
+    gridOffset[0] = constrain(gridOffset[0], -1000, 1000);
+    gridOffset[1] = constrain(gridOffset[1], -1000, 1000);
+  }
+}
+
+function mousePressed() {
+  currentPoint = isOnPoint();
+}
+function mouseReleased() {
+  currentPoint = -1;
 }
