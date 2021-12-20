@@ -118,7 +118,7 @@ function drawMarkers() {
 
     push();
     if (isOnPoint() == i) {fill(0)}
-    if (currentPoint == i) {circle(currPoint[0], currPoint[1], 10);}
+    if (currentPoint == i) {fill(0);circle(currPoint[0], currPoint[1], 10);}
     else {circle(currPoint[0], currPoint[1], 5);}
     pop();
 
@@ -161,12 +161,12 @@ function drawMarkers() {
   }
   push();
     if (isOnPoint() == 0) {fill(0)}
-    if (currentPoint == 0) {circle(linePoints[0][0], linePoints[0][1], 10);}
+    if (currentPoint == 0) {fill(0);circle(linePoints[0][0], linePoints[0][1], 10);}
     else {circle(linePoints[0][0], linePoints[0][1], 5);}
   pop();
   push();
-    if (isOnPoint() == linePoints.length-1) {fill(0)}
-    if (currentPoint == linePoints.length-1) {circle(linePoints[linePoints.length-1][0], linePoints[linePoints.length-1][1], 10);}
+    if (isOnPoint() == linePoints.length-1){fill(0)}
+    if (currentPoint == linePoints.length-1) {fill(0);circle(linePoints[linePoints.length-1][0], linePoints[linePoints.length-1][1], 10);}
     else {circle(linePoints[linePoints.length-1][0], linePoints[linePoints.length-1][1], 5);}
   pop();
   pop()
