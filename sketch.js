@@ -11,6 +11,8 @@ let quadratic = false;
 let approxQuadratic = false
 let catmull = false;
 
+let outputMode = "POINTS";
+
 let sliderCurveness, sliderResolution, showOriginal, showQuadratic, showApproxQuadratic, showCatmull;
 let currentPoint = -1;
 
@@ -30,6 +32,9 @@ function setup() {
   textAlign(CENTER, CENTER);
 
   gridOffset = [Math.round(width / 2), Math.round(height / 2)];
+
+  subdivideCurve();
+  showOutput();
 }
 
 function draw() {
@@ -48,8 +53,10 @@ function draw() {
   translate(gridOffset[0], gridOffset[1]);
 
   if (mouseIsPressed) {
-    dragPoints()
+    drag()
   }
+
+  subdivideCurve();
 
   drawGrid();
   
@@ -59,12 +66,16 @@ function draw() {
   if (approxQuadratic) drawApproxQuadratic();
   drawMarkers();
   pop();
+
+  onDomElement();
 }
 
 function mouseWheel(event) {
-  gridScale += (event.delta * -0.01);
-  gridScale = constrain(gridScale, 1, 2)
-  return false;
+  if (!onDomElement()) {
+    gridScale += (event.delta * -0.01);
+    gridScale = constrain(gridScale, 0.5, 2)
+    return false;
+  }
 }
 
 function drawGrid() {
@@ -105,6 +116,7 @@ function drawMarkers() {
   stroke(0);
   strokeWeight(2);
   fill(255);
+
   for (let i = 1; i < linePoints.length-1; i++){
     let prevPoint = linePoints[i-1];
     let currPoint = linePoints[i];
@@ -207,12 +219,6 @@ function drawApproxQuadratic() {
   strokeWeight(2);
   fill(255);
 
-  curvedPoints = [[linePoints[0], linePoints[1]]];
-
-  for (let i = 1; i < linePoints.length-1; i++){
-    subdivideCurve(i);
-  }
-
   for (let i = 1; i < curvedPoints.length; i++){
     line(curvedPoints[i-1][0], curvedPoints[i-1][1], curvedPoints[i][0], curvedPoints[i][1]);
   }
@@ -260,26 +266,29 @@ function calculateAngle(slopeOne, slopeTwo) {
   return angle;
 }
 
-function subdivideCurve(i) {
-  let prevPoint = linePoints[i-1];
-  let currPoint = linePoints[i];
-  let nextPoint = linePoints[i+1];
+function subdivideCurve() {
+  curvedPoints = [[linePoints[0], linePoints[1]]];
+  for (let i = 1; i < linePoints.length-1; i++){
+    let prevPoint = linePoints[i-1];
+    let currPoint = linePoints[i];
+    let nextPoint = linePoints[i+1];
 
-  segmentDistance = dist(prevPoint[0], prevPoint[1], currPoint[0], currPoint[1]);
-  lerpVal = 1 - constrain(curveness / segmentDistance, 0, 0.5)
-  prevControl = [lerp(prevPoint[0], currPoint[0], lerpVal), lerp(prevPoint[1], currPoint[1], lerpVal)]
+    segmentDistance = dist(prevPoint[0], prevPoint[1], currPoint[0], currPoint[1]);
+    lerpVal = 1 - constrain(curveness / segmentDistance, 0, 0.5)
+    prevControl = [lerp(prevPoint[0], currPoint[0], lerpVal), lerp(prevPoint[1], currPoint[1], lerpVal)]
 
-  segmentDistance = dist(currPoint[0], currPoint[1], nextPoint[0], nextPoint[1]);
-  lerpVal = constrain(curveness / segmentDistance, 0, 0.5)
-  nextControl = [lerp(currPoint[0], nextPoint[0], lerpVal), lerp(currPoint[1], nextPoint[1], lerpVal)]
+    segmentDistance = dist(currPoint[0], currPoint[1], nextPoint[0], nextPoint[1]);
+    lerpVal = constrain(curveness / segmentDistance, 0, 0.5)
+    nextControl = [lerp(currPoint[0], nextPoint[0], lerpVal), lerp(currPoint[1], nextPoint[1], lerpVal)]
 
-  let step = 1 / (resolution + 1);
+    let step = 1 / (resolution + 1);
 
-  for (let j = 0; j <= 1; j += step) {
-    let pointX = ((1-j)**2)*prevControl[0] + 2*(1-j)*j*currPoint[0]+(j**2)*nextControl[0]
-    let pointY = ((1-j)**2)*prevControl[1] + 2*(1-j)*j*currPoint[1]+(j**2)*nextControl[1]
+    for (let j = 0; j <= 1; j += step) {
+      let pointX = ((1-j)**2)*prevControl[0] + 2*(1-j)*j*currPoint[0]+(j**2)*nextControl[0]
+      let pointY = ((1-j)**2)*prevControl[1] + 2*(1-j)*j*currPoint[1]+(j**2)*nextControl[1]
 
-    curvedPoints.push([pointX, pointY]);
+      curvedPoints.push([pointX, pointY]);
+    }
   }
 }
 
@@ -293,25 +302,62 @@ function isOnPoint(){
   return point;
 }
 
-function dragPoints() {
-  if (currentPoint != -1) {
-    snapSize = 10;
-    if (keyIsPressed === true) {
-      if (key == "Shift") snapSize = 50;
+function onDomElement() {
+  let element = document.getElementById("controls");
+  if (mouseX > width - element.offsetWidth && mouseY < element.offsetHeight) return true
+  
+  element = document.getElementById("code");
+  if (mouseY > height - element.offsetHeight) return true
+
+  element = document.getElementById("point-tab");
+  if (mouseX > element.offsetLeft && mouseX < element.offsetWidth + element.offsetLeft && mouseY > height - 50 - element.offsetHeight) return true
+
+  element = document.getElementById("code-tab");
+  if (mouseX > element.offsetLeft && mouseX < element.offsetWidth + element.offsetLeft && mouseY > height - 50 - element.offsetHeight) return true
+}
+
+function drag() {
+  if (!onDomElement()) {
+    if (currentPoint != -1) {
+      snapSize = 10;
+      if (keyIsPressed === true) {
+        if (key == "Shift") snapSize = 50;
+      }
+      linePoints[currentPoint][0] = Math.round((mouseX - gridOffset[0]) / snapSize) * snapSize;
+      linePoints[currentPoint][1] = Math.round((mouseY - gridOffset[1]) / snapSize) * snapSize;
+
+      showOutput();
+    } else {
+      gridOffset[0] = gridOffset[0] + movedX;
+      gridOffset[1] = gridOffset[1] + movedY;
+      gridOffset[0] = constrain(gridOffset[0], -1000, 1000);
+      gridOffset[1] = constrain(gridOffset[1], -1000, 1000);
     }
-    linePoints[currentPoint][0] = Math.round((mouseX - gridOffset[0]) / snapSize) * snapSize;
-    linePoints[currentPoint][1] = Math.round((mouseY - gridOffset[1]) / snapSize) * snapSize;
-  } else {
-    gridOffset[0] = gridOffset[0] + movedX;
-    gridOffset[1] = gridOffset[1] + movedY;
-    gridOffset[0] = constrain(gridOffset[0], -1000, 1000);
-    gridOffset[1] = constrain(gridOffset[1], -1000, 1000);
   }
 }
 
 function mousePressed() {
-  currentPoint = isOnPoint();
+  if (mouseX < width - document.getElementById("controls").offsetWidth || mouseY > document.getElementById("controls").offsetHeight)
+    currentPoint = isOnPoint();
 }
 function mouseReleased() {
   currentPoint = -1;
+}
+
+function toggleOutput() {
+  document.getElementById("point-tab").classList.toggle("selected");
+  document.getElementById("code-tab").classList.toggle("selected");
+  if (outputMode == "POINTS") outputMode = "CODE";
+  else outputMode = "POINTS"
+}
+
+function showOutput() {
+  points = []
+  if (outputMode == "POINTS") {
+    for (let i = 0; i < curvedPoints.length; i++) {
+        points.push("[" + curvedPoints[i][0] + ", " + curvedPoints[i][1] + "]")
+    }
+  } else {
+  }
+  document.getElementById("output").innerHTML = "[" + points.join(", ") + "]"
 }
